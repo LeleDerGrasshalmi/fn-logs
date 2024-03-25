@@ -4,9 +4,10 @@ This project aims to upload and analyze certain parts about fortnite logs.
 
 What we are interested in:
 
+- Profile Versions
 - API Errors
 - MMS Errors
-- Profile Versions
+- To be continued ...
 
 ## Requirements
 
@@ -28,3 +29,5 @@ yarn dev --open
 ```bash
 yarn build
 ```
+
+The latest version is available at https://fnlogs.lel3x.de hosted [cloudflare pages](pages.dev).
