@@ -9,6 +9,9 @@ const timeRegex = /\[(?<year>\d{4}).(?<month>\d{2}).(?<date>\d{2})-(?<hour>\d{2}
 const errorRegex = /Raw=(?<response>.+)/;
 const errorStatusCodeRegex = /(code|Code|HttpResult)(: |=)(?<statusCode>\d+)/;
 
+const mmsMessage = "LogMatchmakingServiceClient: Verbose: HandleWebSocketMessage - Received message: ";
+const mmsMessageRegex = /Received message: "(?<message>.+)"/;
+
 export interface ProfileUpdate {
     time: string;
     accountId: string;
@@ -25,12 +28,21 @@ export interface APIResponseError {
     data: Record<string, undefined> | string;
 }
 
+export interface MMSError {
+    time: string;
+    payload: {
+        code: number;
+        reason: string;
+    };
+}
+
 export interface AnalyzedLogOutput {
     platform: string | null;
     buildVersion: string | null;
     engineVersion: string | null;
     profileUpdates: ProfileUpdate[];
     errors: APIResponseError[];
+    mmsErrors: MMSError[];
 }
 
 const hasTime = (line: string) =>
@@ -94,6 +106,7 @@ const analyzeLog = (file: string) => {
         engineVersion: null,
         profileUpdates: [],
         errors: [],
+        mmsErrors: [],
     };
 
     for (let i = 0; i < lines.length; i += 1) {
@@ -211,6 +224,28 @@ const analyzeLog = (file: string) => {
                 statusCode: statusCode ? parseInt(statusCode) : null,
                 data: tryParseJson(errorData),
             });
+
+            continue;
+        }
+
+        if (line.includes(mmsMessage)) {
+            const message = line.match(mmsMessageRegex)?.groups?.message;
+
+            if (message) {
+                const parsed = tryParseJson(message);
+
+                if (typeof parsed === 'object'
+                    && parsed?.name === 'Error'
+                    && typeof parsed?.payload === 'object'
+                ) {
+                    output.mmsErrors.push({
+                        time: parseTime(line),
+                        payload: <MMSError['payload']>parsed.payload,
+                    });
+                }
+            }
+
+            continue;
         }
     }
 
