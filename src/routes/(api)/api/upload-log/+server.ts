@@ -3,8 +3,8 @@ import type { RequestHandler } from "./$types";
 import storage from "$lib/server/storage";
 import { env } from "$env/dynamic/private";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { Buffer } from 'node:buffer';
 import { randomUUID } from "node:crypto";
+import analyzeLog from "$lib/server/log-analyzer";
 
 const textPlainContentType = "text/plain";
 
@@ -28,17 +28,31 @@ export const POST: RequestHandler = async ({ request }) => {
             });
         }
 
-        const id = randomUUID();
+        const fileContent = await file.text();
+        const output = analyzeLog(fileContent);
 
+        if (!output.platform
+            || !output.buildVersion
+            || !output.engineVersion
+        ) {
+            error(400, {
+                message: 'Incomplete file',
+            });
+        }
+
+        const id = randomUUID();
         const command = new PutObjectCommand({
             Bucket: env.STORAGE_BUCKET,
-            Key: `${id}.txt`,
-            Body: Buffer.from(await file.arrayBuffer()), // (;
+            Key: `${output.buildVersion}-${output.platform}-${id}.txt`,
+            Body: fileContent,
             ContentType: textPlainContentType,
             Metadata: {
                 'name': file.name,
+                'platform': output.platform,
+                'build-version': output.buildVersion,
+                'engine-version': output.engineVersion,
             },
-        })
+        });
 
         const object = await storage.send(command, {
             requestTimeout: 15 * 1000,
@@ -48,10 +62,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
         return new Response(JSON.stringify({
             id,
+            data: output,
         }), {
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+            },
         });
     } catch (err) {
         console.error(err);
@@ -60,7 +75,7 @@ export const POST: RequestHandler = async ({ request }) => {
             throw err;
         }
 
-        error(400, {
+        error(500, {
             message: String(err),
         });
     }
