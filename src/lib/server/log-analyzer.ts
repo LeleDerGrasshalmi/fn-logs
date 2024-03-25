@@ -6,6 +6,9 @@ const metadataRegex = /(?<key>\w+)="(?<value>.+)"/;
 
 const timeRegex = /\[(?<year>\d{4}).(?<month>\d{2}).(?<date>\d{2})-(?<hour>\d{2}).(?<minute>\d{2}).(?<second>\d{2}):(?<millisecond>\d{3})\]/;
 
+const errorRegex = /Raw=(?<response>.+)/;
+const errorStatusCodeRegex = /(code|Code|HttpResult)(: |=)(?<statusCode>\d+)/;
+
 export interface ProfileUpdate {
     time: string;
     accountId: string;
@@ -16,11 +19,18 @@ export interface ProfileUpdate {
     wipeNumber: number;
 }
 
+export interface APIResponseError {
+    time: string;
+    statusCode: number | null;
+    data: Record<string, undefined> | string;
+}
+
 export interface AnalyzedLogOutput {
     platform: string | null;
     buildVersion: string | null;
     engineVersion: string | null;
     profileUpdates: ProfileUpdate[];
+    errors: APIResponseError[];
 }
 
 const parseTime = (line: string) => {
@@ -44,10 +54,11 @@ const analyzeLog = (file: string) => {
         buildVersion: null,
         engineVersion: null,
         profileUpdates: [],
+        errors: [],
     };
 
     for (let i = 0; i < lines.length; i += 1) {
-        const line = lines[i];
+        const line = lines[i].trim();
 
         // MCP Profile Update
         if (line.includes(fullProfileUpdate)) {
@@ -98,6 +109,44 @@ const analyzeLog = (file: string) => {
             }
 
             continue;
+        }
+
+        // Errors (single-line)
+        if (line.includes(' Raw={"') && line.endsWith('"}')) {
+            //
+            const groups = line.match(errorRegex)?.groups;
+
+            console.log(line);
+            console.log(groups);
+
+            if (groups?.response) {
+                let error: APIResponseError['data'];
+
+                try {
+                    error = JSON.parse(groups.response);
+                } catch {
+                    // invalid json (e.g special chars) or something, so store it as text
+
+                    error = groups.response;
+                }
+
+                if (error) {
+                    const statusCode = line.match(errorStatusCodeRegex)?.groups?.statusCode;
+
+                    output.errors.push({
+                        time: parseTime(line),
+                        statusCode: statusCode ? parseInt(statusCode) : null,
+                        data: error,
+                    })
+                }
+            }
+
+            continue;
+        }
+
+        // Errors (multi-line)
+        if (line.includes('"errorCode"')) {
+            //
         }
     }
 
