@@ -3,10 +3,10 @@ import { env } from "$env/dynamic/private";
 
 const storage = new S3Client({
     region: "auto",
-    endpoint: env.STORAGE_ENDPOINT,
+    endpoint: env.STORAGE_ENDPOINT!,
     credentials: {
-        accessKeyId: env.STORAGE_ACCESS_KEY_ID,
-        secretAccessKey: env.STORAGE_ACCESS_KEY_SECRET,
+        accessKeyId: env.STORAGE_ACCESS_KEY_ID!,
+        secretAccessKey: env.STORAGE_ACCESS_KEY_SECRET!,
     },
 });
 

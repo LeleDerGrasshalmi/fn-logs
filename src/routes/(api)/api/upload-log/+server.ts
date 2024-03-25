@@ -2,8 +2,9 @@ import { error, isHttpError } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import storage from "$lib/server/storage";
 import { env } from "$env/dynamic/private";
-import { randomUUID } from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { Buffer } from 'node:buffer';
+import { randomUUID } from "node:crypto";
 
 const textPlainContentType = "text/plain";
 
