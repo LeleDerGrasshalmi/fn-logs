@@ -41,24 +41,28 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         const id = randomUUID();
-        const command = new PutObjectCommand({
-            Bucket: env.STORAGE_BUCKET,
-            Key: `${output.buildVersion}-${output.platform}-${id}.txt`,
-            Body: fileContent,
-            ContentType: textPlainContentType,
-            Metadata: {
-                'name': file.name,
-                'platform': output.platform,
-                'build-version': output.buildVersion,
-                'engine-version': output.engineVersion,
-            },
-        });
 
-        const object = await storage.send(command, {
-            requestTimeout: 15 * 1000,
-        });
+        if (env.STORAGE_ENABLED?.toLowerCase() === 'true') {
+            const command = new PutObjectCommand({
+                Bucket: env.STORAGE_BUCKET,
+                Key: `${output.buildVersion}-${output.platform}-${id}.txt`,
+                Body: fileContent,
+                ContentType: textPlainContentType,
+                Metadata: {
+                    'name': file.name,
+                    'platform': output.platform,
+                    'build-version': output.buildVersion,
+                    'engine-version': output.engineVersion,
+                },
+            });
 
-        console.log(object);
+            const object = await storage.send(command, {
+                requestTimeout: 15 * 1000,
+            });
+
+            console.log(object);
+        }
+
 
         return new Response(JSON.stringify({
             id,

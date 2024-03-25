@@ -33,6 +33,16 @@ export interface AnalyzedLogOutput {
     errors: APIResponseError[];
 }
 
+const hasTime = (line: string) =>
+    line[0] === '[' // start
+    && line[5] === '.' // year/month
+    && line[8] === '.' // month/date
+    && line[11] === '-' // date/hour
+    && line[14] === '.' // hour/minute
+    && line[17] === '.' // minute/second
+    && line[20] === ':' // second/millisecond
+    && line[24] === ']'; // end
+
 const parseTime = (line: string) => {
     const match = line.match(timeRegex);
 
@@ -44,6 +54,30 @@ const parseTime = (line: string) => {
     }
 
     return line.substring(1, 24);
+};
+
+const tryFindAbsoluteIndex = (lines: string[], index: number, searchForStart: boolean) => {
+    for (let j = 0; j < 10; j += 1) {
+        const absoluteIndex = searchForStart
+            ? index - j
+            : index + j;
+
+        if (hasTime(lines[absoluteIndex])) {
+            return absoluteIndex;
+        }
+    }
+
+    return -1;
+};
+
+const tryParseJson = (data: string): APIResponseError['data'] => {
+    try {
+        return JSON.parse(data);
+    } catch {
+        // invalid json (e.g special chars) or something, so store it as text
+
+        return data;
+    }
 }
 
 const analyzeLog = (file: string) => {
@@ -116,41 +150,66 @@ const analyzeLog = (file: string) => {
             //
             const groups = line.match(errorRegex)?.groups;
 
-            console.log(line);
-            console.log(groups);
-
             if (groups?.response) {
-                let error: APIResponseError['data'];
+                const statusCode = line.match(errorStatusCodeRegex)?.groups?.statusCode;
 
-                try {
-                    error = JSON.parse(groups.response);
-                } catch {
-                    // invalid json (e.g special chars) or something, so store it as text
-
-                    error = groups.response;
-                }
-
-                if (error) {
-                    const statusCode = line.match(errorStatusCodeRegex)?.groups?.statusCode;
-
-                    output.errors.push({
-                        time: parseTime(line),
-                        statusCode: statusCode ? parseInt(statusCode) : null,
-                        data: error,
-                    })
-                }
+                output.errors.push({
+                    time: parseTime(line),
+                    statusCode: statusCode ? parseInt(statusCode) : null,
+                    data: tryParseJson(groups.response),
+                });
             }
 
             continue;
         }
 
         // Errors (multi-line)
-        if (line.includes('"errorCode"')) {
-            //
+        if (line.includes('"errorCode"') && !hasTime(line)) {
+            const startLineIndex = tryFindAbsoluteIndex(lines, i, true);
+
+            // failed to determine starting line
+            if (startLineIndex === -1) {
+                console.debug("failed to find multi line error start", i, line);
+
+                continue;
+            }
+
+            const endLineIndex = tryFindAbsoluteIndex(lines, i, false)
+
+            // failed to determine end line
+            if (endLineIndex === -1) {
+                console.debug("failed to find multi line error end", i, line);
+
+                continue;
+            }
+
+            // Known multi line errors end have a colon before the actual response error json starts
+            const firstLineErrorStartIndex = lines[startLineIndex].lastIndexOf((':'));
+
+            if (firstLineErrorStartIndex === -1) {
+                console.debug(`failed to find multi line error start in first line (${startLineIndex} - ${endLineIndex})`, line);
+
+                continue;
+            }
+
+            const firstLogEntryLine = lines[startLineIndex];
+            const errorData = lines
+                .slice(startLineIndex, endLineIndex)
+                .join('')
+                .substring(firstLineErrorStartIndex + 1)
+                .trim();
+
+            const statusCode = firstLogEntryLine.match(errorStatusCodeRegex)?.groups?.statusCode;
+
+            output.errors.push({
+                time: parseTime(firstLogEntryLine),
+                statusCode: statusCode ? parseInt(statusCode) : null,
+                data: tryParseJson(errorData),
+            });
         }
     }
 
     return output;
-}
+};
 
 export default analyzeLog;
