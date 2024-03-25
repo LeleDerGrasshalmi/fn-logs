@@ -7,7 +7,7 @@ const metadataRegex = /(?<key>\w+)="(?<value>.+)"/;
 const timeRegex = /\[(?<year>\d{4}).(?<month>\d{2}).(?<date>\d{2})-(?<hour>\d{2}).(?<minute>\d{2}).(?<second>\d{2}):(?<millisecond>\d{3})\]/;
 
 const errorRegex = /Raw=(?<response>.+)/;
-const errorStatusCodeRegex = /(code|Code|HttpResult)(: |=)(?<statusCode>\d+)/;
+const errorStatusCodeRegex = /(code|Code|HttpResult|Status)(: |=)(?<statusCode>\d+)/;
 
 const mmsMessage = "LogMatchmakingServiceClient: Verbose: HandleWebSocketMessage - Received message: ";
 const mmsMessageRegex = /Received message: "(?<message>.+)"/;
