@@ -70,7 +70,12 @@ const tryFindAbsoluteIndex = (lines: string[], index: number, searchForStart: bo
     return -1;
 };
 
-const tryParseJson = (data: string): APIResponseError['data'] => {
+const tryParseJson = (response: string): APIResponseError['data'] => {
+    // errors may be inside quotation marks, so remove those
+    const data = response.startsWith('"') && response.endsWith('"')
+        ? response.substring(1, response.length - 1)
+        : response;
+
     try {
         return JSON.parse(data);
     } catch {
