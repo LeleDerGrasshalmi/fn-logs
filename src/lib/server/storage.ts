@@ -1,11 +1,13 @@
-import S3 from 'aws-sdk/clients/s3.js';
+import { S3Client } from '@aws-sdk/client-s3';
 import { env } from "$env/dynamic/private";
 
-const storage = new S3({
+const storage = new S3Client({
+    region: "auto",
     endpoint: env.STORAGE_ENDPOINT,
-    accessKeyId: env.STORAGE_ACCESS_KEY_ID,
-    secretAccessKey: env.STORAGE_ACCESS_KEY_SECRET,
-    signatureVersion: 'v4',
+    credentials: {
+        accessKeyId: env.STORAGE_ACCESS_KEY_ID,
+        secretAccessKey: env.STORAGE_ACCESS_KEY_SECRET,
+    },
 });
 
 export default storage;
