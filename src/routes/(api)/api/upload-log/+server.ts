@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import analyzeLog from "$lib/server/log-analyzer";
 
 const textPlainContentType = "text/plain";
+const ocetStreamContentType = "application/octet-stream";
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
@@ -19,12 +20,20 @@ export const POST: RequestHandler = async ({ request }) => {
         const formData = await request.formData();
         const file = formData.get('file');
 
-        if (!(file instanceof File)
-            || file.size === 0
-            || file.type !== textPlainContentType
-        ) {
+        if (!(file instanceof File) || file.size === 0) {
             error(400, {
                 message: 'Invalid file',
+            });
+        }
+
+        // we must support ocet stream content type, because the frontend
+        // file selection doesnt know that ".log" files are text/plain
+        // and therefore defaults to application/ocet-stream
+        if (file.type !== textPlainContentType
+            && file.type !== ocetStreamContentType
+        ) {
+            error(400, {
+                message: 'Invalid file type',
             });
         }
 
