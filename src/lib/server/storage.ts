@@ -1,7 +1,7 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { env } from "$env/dynamic/private";
 
-const storage = new S3Client({
+export const storage = new S3Client({
     region: "auto",
     endpoint: env.STORAGE_ENDPOINT!,
     credentials: {
@@ -10,4 +10,4 @@ const storage = new S3Client({
     },
 });
 
-export default storage;
+export const storageEnabled = env.STORAGE_ENABLED === 'true';

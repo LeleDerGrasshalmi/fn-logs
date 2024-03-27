@@ -94,8 +94,20 @@
 
 		<div>
 			<form>
-				<p class="font-semibold text-xl mb-2">Analyze your log</p>
+				<p class="font-bold text-2xl mb-2">Analyze your log</p>
+
 				<input bind:files type="file" accept=".log" bind:this={input} />
+
+				{#if data.storageEnabled}
+					<div class="mt-2 mb-2 code">
+						<p class="font-bold text-xl">STORAGE DISCLAIMER</p>
+
+						<div class="mt-2 mb-2">
+							<p>We store submitted logs in our storage.</p>
+							<p>So we can analyze the logs later and get more data.</p>
+						</div>
+					</div>
+				{/if}
 
 				<div class="mt-2 flex flex-row gap-2 justify-center">
 					<button class="mt-2 btn variant-filled" on:click={async () => await uploadLog()}>

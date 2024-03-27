@@ -1,6 +1,6 @@
 import { error, isHttpError } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import storage from "$lib/server/storage";
+import { storage, storageEnabled } from "$lib/server/storage";
 import { env } from "$env/dynamic/private";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "node:crypto";
@@ -52,7 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
         const id = randomUUID();
 
-        if (env.STORAGE_ENABLED?.toLowerCase() === 'true') {
+        if (storageEnabled) {
             const command = new PutObjectCommand({
                 Bucket: env.STORAGE_BUCKET,
                 Key: `${output.meta.buildVersion}-${output.meta.platform || 'UnknownPlatform'}-${id}.txt`,
@@ -81,9 +81,8 @@ export const POST: RequestHandler = async ({ request }) => {
                 requestTimeout: 15 * 1000,
             });
 
-            console.log(object);
+            console.debug(object);
         }
-
 
         return new Response(JSON.stringify({
             id,

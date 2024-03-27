@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "type": "module",
+  "license": "MIT",
   "packageManager": "yarn@1.22.19",
   "repository": {
     "type": "git",
