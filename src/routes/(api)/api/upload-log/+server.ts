@@ -40,8 +40,9 @@ export const POST: RequestHandler = async ({ request }) => {
         const fileContent = await file.text();
         const output = analyzeLog(fileContent);
 
-        if (!output.platform
-            || !output.buildVersion
+        // Launcher logs dont have the platform metadata,
+        // so only check the other properties
+        if (!output.buildVersion
             || !output.engineVersion
         ) {
             error(400, {

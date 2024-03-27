@@ -1,8 +1,8 @@
 const fullProfileUpdate = "LogProfileSys: MCP-Profile: Full profile update";
 const fullProfileUpdateRegex = /\(rev=(?<rvn>\d+), version=(?<version>\w+)@w=(?<wipeNumber>\d+)\) for (?<displayName>.+) accountId=(MCP:|)(?<accountId>[a-f0-9]{32}) profileId=(?<profileId>\w+)/;
 
-const metadata = "LogCsvProfiler: Display: Metadata set : ";
-const metadataRegex = /(?<key>\w+)="(?<value>.+)"/;
+const initMetadata = "LogInit: ";
+const initMetadataRegex = /LogInit: (?<key>.+)(: |=)(?<value>.+)/;
 
 const timeRegex = /\[(?<year>\d{4}).(?<month>\d{2}).(?<date>\d{2})-(?<hour>\d{2}).(?<minute>\d{2}).(?<second>\d{2}):(?<millisecond>\d{3})\]/;
 
@@ -137,21 +137,21 @@ const analyzeLog = (file: string) => {
             continue;
         }
 
-        // Metadata
-        if (line.startsWith(metadata)) {
-            const groups = line.match(metadataRegex)?.groups;
+        // Init Metadata
+        if (line.startsWith(initMetadata)) {
+            const groups = line.match(initMetadataRegex)?.groups;
 
             if (groups?.key && groups?.value) {
                 switch (groups.key) {
-                    case 'platform':
+                    case 'Platform':
                         output.platform = groups.value;
                         break;
 
-                    case 'buildversion':
+                    case 'Build':
                         output.buildVersion = groups.value;
                         break;
 
-                    case 'engineversion':
+                    case 'Engine Version':
                         output.engineVersion = groups.value;
                         break;
 
@@ -201,8 +201,17 @@ const analyzeLog = (file: string) => {
                 continue;
             }
 
-            // Known multi line errors end have a colon before the actual response error json starts
-            const firstLineErrorStartIndex = lines[startLineIndex].lastIndexOf((':'));
+            // Multi line errors may use the single line format with "Raw={...}"
+            let firstLineErrorStartIndex = lines[startLineIndex].lastIndexOf(('Raw='));
+
+            if (firstLineErrorStartIndex !== -1) {
+                // some multi line errors may use the single line format with Raw={...} so we need to
+                // support that aswell
+                firstLineErrorStartIndex += "Raw=".length - 1;
+            } else {
+                // But some may also use "Message : {...}" so support this aswell
+                firstLineErrorStartIndex = lines[startLineIndex].lastIndexOf((':'));
+            }
 
             if (firstLineErrorStartIndex === -1) {
                 console.debug(`failed to find multi line error start in first line (${startLineIndex} - ${endLineIndex})`, line);
