@@ -1,4 +1,8 @@
 <script lang="ts">
+	import type { PageData } from './$types';
+
+	export let data: PageData;
+
 	let files: FileList;
 	let input: HTMLInputElement;
 	let errorMessage: string | null = null;
@@ -60,7 +64,7 @@
 
 		<p>
 			This Project is
-			<a href="https://github.com/LeleDerGrasshalmi/fn-logs" class="font-bold"> Open Source</a>
+			<a href={data.repository} target="_blank" class="font-bold"> Open Source</a>
 		</p>
 
 		<div class="text-left">
