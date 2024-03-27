@@ -72,6 +72,22 @@
 			<li>to be continued ...</li>
 		</div>
 
+		<div class="text-left">
+			<p>We have tested the following log files:</p>
+
+			<li>EpicGamesLauncher</li>
+			<li>FortniteGame</li>
+			<li>UnrealEditorFortnite</li>
+			<li>WorldExplorers</li>
+		</div>
+
+		<div class="text-left">
+			<p>The following log files are known to be unsupported:</p>
+
+			<li>BuildPatchTool</li>
+			<li>ShooterGame</li>
+		</div>
+
 		<div>
 			<form>
 				<p class="font-semibold text-xl mb-2">Analyze your log</p>

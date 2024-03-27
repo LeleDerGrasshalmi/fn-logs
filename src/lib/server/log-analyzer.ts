@@ -37,12 +37,24 @@ export interface MMSError {
 }
 
 export interface AnalyzedLogOutput {
-    platform: string | null;
-    buildVersion: string | null;
-    engineVersion: string | null;
-    profileUpdates: ProfileUpdate[];
-    errors: APIResponseError[];
-    mmsErrors: MMSError[];
+    meta: {
+        executableName: string | null;
+        platform: string | null;
+        branch: string | null;
+        buildConfig: string | null;
+        buildVersion: string | null;
+        engineVersion: string | null;
+        netCL: number | null;
+
+        compiledAt: string | null;
+        compiledWith: string | null;
+        compiledWithVersion: string | null;
+    };
+    events: {
+        profileUpdates: ProfileUpdate[];
+        errors: APIResponseError[];
+        mmsErrors: MMSError[];
+    };
 }
 
 const hasTime = (line: string) =>
@@ -101,12 +113,24 @@ const analyzeLog = (file: string) => {
     const lines = file.split("\n");
 
     const output: AnalyzedLogOutput = {
-        platform: null,
-        buildVersion: null,
-        engineVersion: null,
-        profileUpdates: [],
-        errors: [],
-        mmsErrors: [],
+        meta: {
+            executableName: null,
+            platform: null,
+            branch: null,
+            buildConfig: null,
+            buildVersion: null,
+            engineVersion: null,
+            netCL: null,
+
+            compiledAt: null,
+            compiledWith: null,
+            compiledWithVersion: null,
+        },
+        events: {
+            profileUpdates: [],
+            errors: [],
+            mmsErrors: [],
+        },
     };
 
     for (let i = 0; i < lines.length; i += 1) {
@@ -123,7 +147,7 @@ const analyzeLog = (file: string) => {
                 && groups?.accountId
                 && groups?.profileId
             ) {
-                output.profileUpdates.push({
+                output.events.profileUpdates.push({
                     time: parseTime(line),
                     accountId: groups.accountId,
                     displayName: groups.displayName,
@@ -141,18 +165,55 @@ const analyzeLog = (file: string) => {
         if (line.startsWith(initMetadata)) {
             const groups = line.match(initMetadataRegex)?.groups;
 
+            // See https://github.com/EpicGames/UnrealEngine/blob/072300df18a94f18077ca20a14224b5d99fee872/Engine/Source/Runtime/Core/Private/Misc/App.cpp#L378
             if (groups?.key && groups?.value) {
                 switch (groups.key) {
+                    case 'ExecutableName':
+                        output.meta.executableName = groups.value;
+                        break;
+
                     case 'Platform':
-                        output.platform = groups.value;
+                        output.meta.platform = groups.value;
+                        break;
+
+                    case 'Branch Name':
+                        output.meta.branch = groups.value;
                         break;
 
                     case 'Build':
-                        output.buildVersion = groups.value;
+                        output.meta.buildVersion = groups.value;
+                        break;
+
+                    case 'Build Configuration':
+                        output.meta.buildConfig = groups.value;
                         break;
 
                     case 'Engine Version':
-                        output.engineVersion = groups.value;
+                        output.meta.engineVersion = groups.value;
+                        break;
+
+                    case 'Net CL':
+                        output.meta.netCL = parseInt(groups.value);
+                        break;
+
+                    case 'Compiled (64-bit)':
+                    case 'Compiled (32-bit)':
+                        output.meta.compiledAt = new Date(groups.value).toISOString()
+                        break;
+
+                    case 'Compiled with Clang':
+                        output.meta.compiledWith = 'Clang';
+                        output.meta.compiledWithVersion = groups.value;
+                        break;
+
+                    case 'Compiled with ICL':
+                        output.meta.compiledWith = 'ICL';
+                        output.meta.compiledWithVersion = groups.value;
+                        break;
+
+                    case 'Compiled with Visual C++':
+                        output.meta.compiledWith = 'Visual C++';
+                        output.meta.compiledWithVersion = groups.value;
                         break;
 
                     default:
@@ -171,7 +232,7 @@ const analyzeLog = (file: string) => {
             if (groups?.response) {
                 const statusCode = line.match(errorStatusCodeRegex)?.groups?.statusCode;
 
-                output.errors.push({
+                output.events.errors.push({
                     time: parseTime(line),
                     statusCode: statusCode ? parseInt(statusCode) : null,
                     data: tryParseJson(groups.response),
@@ -228,7 +289,7 @@ const analyzeLog = (file: string) => {
 
             const statusCode = firstLogEntryLine.match(errorStatusCodeRegex)?.groups?.statusCode;
 
-            output.errors.push({
+            output.events.errors.push({
                 time: parseTime(firstLogEntryLine),
                 statusCode: statusCode ? parseInt(statusCode) : null,
                 data: tryParseJson(errorData),
@@ -237,6 +298,7 @@ const analyzeLog = (file: string) => {
             continue;
         }
 
+        // MMS Errors
         if (line.includes(mmsMessage)) {
             const message = line.match(mmsMessageRegex)?.groups?.message;
 
@@ -247,7 +309,7 @@ const analyzeLog = (file: string) => {
                     && parsed?.name === 'Error'
                     && typeof parsed?.payload === 'object'
                 ) {
-                    output.mmsErrors.push({
+                    output.events.mmsErrors.push({
                         time: parseTime(line),
                         payload: <MMSError['payload']>parsed.payload,
                     });

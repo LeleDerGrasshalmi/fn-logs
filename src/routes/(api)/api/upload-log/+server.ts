@@ -42,8 +42,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
         // Launcher logs dont have the platform metadata,
         // so only check the other properties
-        if (!output.buildVersion
-            || !output.engineVersion
+        if (!output.meta.buildVersion
+            || !output.meta.engineVersion
         ) {
             error(400, {
                 message: 'Incomplete file',
@@ -55,16 +55,27 @@ export const POST: RequestHandler = async ({ request }) => {
         if (env.STORAGE_ENABLED?.toLowerCase() === 'true') {
             const command = new PutObjectCommand({
                 Bucket: env.STORAGE_BUCKET,
-                Key: `${output.buildVersion}-${output.platform}-${id}.txt`,
+                Key: `${output.meta.buildVersion}-${output.meta.platform || 'UnknownPlatform'}-${id}.txt`,
                 Body: fileContent,
                 ContentType: textPlainContentType,
                 Metadata: {
                     'name': file.name,
-                    'platform': output.platform,
-                    'build-version': output.buildVersion,
-                    'engine-version': output.engineVersion,
+                    'build-version': output.meta.buildVersion,
+                    'engine-version': output.meta.engineVersion,
                 },
             });
+
+            if (output.meta.platform) {
+                command.input.Metadata!['platform'] = output.meta.platform;
+            }
+
+            if (output.meta.branch) {
+                command.input.Metadata!['branch'] = output.meta.branch;
+            }
+
+            if (output.meta.executableName) {
+                command.input.Metadata!['exectable-name'] = output.meta.executableName;
+            }
 
             const object = await storage.send(command, {
                 requestTimeout: 15 * 1000,
