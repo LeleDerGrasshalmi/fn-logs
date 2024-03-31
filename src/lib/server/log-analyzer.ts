@@ -303,7 +303,14 @@ const analyzeLog = (file: string) => {
                 // some multi line errors may use the single line format with Raw={...} so we need to
                 // support that aswell
                 firstLineErrorStartIndex += "Raw=".length - 1;
-            } else {
+            }
+
+            if (firstLineErrorStartIndex === -1) {
+                // Some multi line errors have the following format "code=500 response={...}"
+                firstLineErrorStartIndex = lines[startLineIndex].lastIndexOf(('='));
+            }
+
+            if (firstLineErrorStartIndex === -1) {
                 // But some may also use "Message : {...}" so support this aswell
                 firstLineErrorStartIndex = lines[startLineIndex].lastIndexOf((':'));
             }
