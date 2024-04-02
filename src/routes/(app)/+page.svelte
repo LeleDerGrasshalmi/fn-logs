@@ -8,6 +8,9 @@
 	let errorMessage: string | null = null;
 
 	const uploadLog = async () => {
+		// reset error message
+		errorMessage = null;
+
 		const file = files?.item(0);
 
 		if (!file) {
