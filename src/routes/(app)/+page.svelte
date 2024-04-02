@@ -19,7 +19,7 @@
 			return;
 		}
 
-		if (!file.name.endsWith('.log')) {
+		if (!file.name.endsWith('.log') && !file.name.endsWith('.txt')) {
 			errorMessage = `It appears that '${file.name}' is not a valid fortnite log file'`;
 
 			return;
