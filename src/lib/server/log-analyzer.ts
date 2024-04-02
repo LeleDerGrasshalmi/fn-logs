@@ -165,8 +165,12 @@ const analyzeLog = (file: string) => {
         }
 
         // Init Metadata
-        if (line.startsWith(initMetadata)) {
-            const groups = line.match(initMetadataRegex)?.groups;
+        if (line.includes(initMetadata)) {
+            const content = hasTime(line)
+                ? line.substring(24)
+                : line;
+
+            const groups = content.match(initMetadataRegex)?.groups;
 
             // See https://github.com/EpicGames/UnrealEngine/blob/072300df18a94f18077ca20a14224b5d99fee872/Engine/Source/Runtime/Core/Private/Misc/App.cpp#L378
             if (groups?.key && groups?.value) {
@@ -228,8 +232,12 @@ const analyzeLog = (file: string) => {
         }
 
         // CSV Profiler Metadata
-        if (line.startsWith(csvProfilerMetadata)) {
-            const groups = line.match(csvProfilerMetadataRegex)?.groups;
+        if (line.includes(csvProfilerMetadata)) {
+            const content = hasTime(line)
+                ? line.substring(24)
+                : line;
+
+            const groups = content.match(csvProfilerMetadataRegex)?.groups;
 
             // See https://github.com/EpicGames/UnrealEngine/blob/072300df18a94f18077ca20a14224b5d99fee872/Engine/Source/Runtime/Core/Private/ProfilingDebugging/CsvProfiler.cpp#L2797
             if (groups?.key && groups?.value) {
