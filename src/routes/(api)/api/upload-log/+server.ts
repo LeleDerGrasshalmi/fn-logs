@@ -55,7 +55,7 @@ export const POST: RequestHandler = async ({ request }) => {
         if (storageEnabled) {
             const command = new PutObjectCommand({
                 Bucket: env.STORAGE_BUCKET,
-                Key: `${output.meta.buildVersion}-${output.meta.platform || 'UnknownPlatform'}-${id}.txt`,
+                Key: `${output.meta.buildVersion}/${output.meta.platform || 'UnknownPlatform'}/${id}.txt`,
                 Body: fileContent,
                 ContentType: textPlainContentType,
                 Metadata: {
