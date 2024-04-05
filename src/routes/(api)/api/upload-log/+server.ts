@@ -20,9 +20,21 @@ export const POST: RequestHandler = async ({ request }) => {
         const formData = await request.formData();
         const file = formData.get('file');
 
-        if (!(file instanceof File) || file.size === 0) {
+        if (!file) {
             error(400, {
-                message: 'Invalid file',
+                message: 'File is missing',
+            });
+        }
+
+        if (!(file instanceof File)) {
+            error(400, {
+                message: 'Not a file',
+            });
+        }
+
+        if (file.size === 0) {
+            error(400, {
+                message: 'File is empty',
             });
         }
 
@@ -33,7 +45,7 @@ export const POST: RequestHandler = async ({ request }) => {
             && file.type !== ocetStreamContentType
         ) {
             error(400, {
-                message: 'Invalid file type',
+                message: `Invalid file type: ${file.type || '<None>'}`,
             });
         }
 
