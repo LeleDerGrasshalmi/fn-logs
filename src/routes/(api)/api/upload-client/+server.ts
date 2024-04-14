@@ -1,6 +1,7 @@
 import { error, isHttpError } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { env } from "$env/dynamic/private";
+import { npm_package_version } from "$env/static/private";
 
 interface WorkflowRunsData {
     workflow_runs: {
@@ -22,6 +23,9 @@ interface DownloadCache {
 }
 
 let cache: DownloadCache | null = null;
+const headers = {
+    'User-Agent': `fn-logs-api/${npm_package_version}`,
+};
 
 export const GET: RequestHandler = async () => {
     try {
@@ -35,7 +39,7 @@ export const GET: RequestHandler = async () => {
 
         const baseUserRepo = `${encodeURIComponent(env.GH_UPLOADER_CLIENT_USER)}/${encodeURIComponent(env.GH_UPLOADER_CLIENT_REPO)}`;
         const baseUrl = `https://api.github.com/repos/${baseUserRepo}`;
-        const workflowRunsResponse = await fetch(`${baseUrl}/actions/runs?per_page=1&status=completed`);
+        const workflowRunsResponse = await fetch(`${baseUrl}/actions/runs?per_page=1&status=completed`, { headers });
 
         if (!workflowRunsResponse.ok) {
             error(500, { message: `Fetching GH workflow runs failed with status ${workflowRunsResponse.status} ${workflowRunsResponse.statusText} ${await workflowRunsResponse.text()}` });
@@ -48,7 +52,7 @@ export const GET: RequestHandler = async () => {
             error(500, { message: `It looks likes a download is not available yet` });
         }
 
-        const workflowRunArtifactsResponse = await fetch(`${baseUrl}/actions/runs/${workflowRun.id}/artifacts`);
+        const workflowRunArtifactsResponse = await fetch(`${baseUrl}/actions/runs/${workflowRun.id}/artifacts`, { headers });
 
         if (!workflowRunArtifactsResponse.ok) {
             error(500, { message: `Fetching GH workflow run ${workflowRun.id} artifacts failed with status ${workflowRunArtifactsResponse.status} ${workflowRunArtifactsResponse.statusText} ${await workflowRunArtifactsResponse.text()}` });
