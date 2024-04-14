@@ -140,6 +140,12 @@
 			</div>
 		{/if}
 
+		{#if errorMessage}
+			<p class="code my-2">
+				{errorMessage}
+			</p>
+		{/if}
+
 		<div class="mb-4 flex gap-2">
 			<div>
 				<form>
@@ -156,12 +162,6 @@
 							Clear
 						</button>
 					</div>
-
-					{#if errorMessage}
-						<p class="code mt-2">
-							{errorMessage}
-						</p>
-					{/if}
 				</form>
 			</div>
 

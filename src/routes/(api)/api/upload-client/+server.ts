@@ -38,7 +38,7 @@ export const GET: RequestHandler = async () => {
         const workflowRunsResponse = await fetch(`${baseUrl}/actions/runs?per_page=1&status=completed`);
 
         if (!workflowRunsResponse.ok) {
-            error(500, { message: `Fetching GH workflow runs failed with status ${workflowRunsResponse.status} ${workflowRunsResponse.statusText}` });
+            error(500, { message: `Fetching GH workflow runs failed with status ${workflowRunsResponse.status} ${workflowRunsResponse.statusText} ${await workflowRunsResponse.text()}` });
         }
 
         const workflowRunsData: WorkflowRunsData = await workflowRunsResponse.json();
@@ -51,7 +51,7 @@ export const GET: RequestHandler = async () => {
         const workflowRunArtifactsResponse = await fetch(`${baseUrl}/actions/runs/${workflowRun.id}/artifacts`);
 
         if (!workflowRunArtifactsResponse.ok) {
-            error(500, { message: `Fetching GH workflow run ${workflowRun.id} artifacts failed with status ${workflowRunArtifactsResponse.status} ${workflowRunArtifactsResponse.statusText}` });
+            error(500, { message: `Fetching GH workflow run ${workflowRun.id} artifacts failed with status ${workflowRunArtifactsResponse.status} ${workflowRunArtifactsResponse.statusText} ${await workflowRunArtifactsResponse.text()}` });
         }
 
         const artifactsData: WorkflowRunArtifactsData = await workflowRunArtifactsResponse.json();
