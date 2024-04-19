@@ -273,9 +273,15 @@ const analyzeLog = (file: string) => {
 
             if (groups?.response) {
                 const statusCode = line.match(errorStatusCodeRegex)?.groups?.statusCode;
+                let timeLine = line;
+                let timeLineOffset = 0;
+
+                while (!hasTime(timeLine) && timeLineOffset < 10) {
+                    timeLine = lines[i - --timeLineOffset];
+                }
 
                 output.events.errors.push({
-                    time: parseTime(line),
+                    time: parseTime(timeLine),
                     statusCode: statusCode ? parseInt(statusCode) : null,
                     data: tryParseJson(groups.response),
                 });
