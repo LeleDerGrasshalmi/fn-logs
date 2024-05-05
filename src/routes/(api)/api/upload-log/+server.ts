@@ -52,11 +52,8 @@ export const POST: RequestHandler = async ({ request }) => {
         const fileContent = await file.text();
         const output = analyzeLog(fileContent);
 
-        // Launcher logs dont have the platform metadata,
-        // so only check the other properties
-        if (!output.meta.buildVersion
-            || !output.meta.engineVersion
-        ) {
+        // only say file is incomplete if not a single property was read successfully
+        if (Object.values(output.meta).filter(e => e !== null).length === 0) {
             error(400, {
                 message: 'Incomplete file',
             });
@@ -72,10 +69,16 @@ export const POST: RequestHandler = async ({ request }) => {
                 ContentType: textPlainContentType,
                 Metadata: {
                     'name': file.name,
-                    'build-version': output.meta.buildVersion,
-                    'engine-version': output.meta.engineVersion,
                 },
             });
+
+            if (output.meta.buildVersion) {
+                command.input.Metadata!['build-version'] = output.meta.buildVersion;
+            }
+
+            if (output.meta.engineVersion) {
+                command.input.Metadata!['engine-version'] = output.meta.engineVersion;
+            }
 
             if (output.meta.platform) {
                 command.input.Metadata!['platform'] = output.meta.platform;

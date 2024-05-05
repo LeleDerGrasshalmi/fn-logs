@@ -188,6 +188,7 @@ const analyzeLog = (file: string) => {
                         break;
 
                     case 'Build':
+                    case 'Version': // very old alias for build (used on ex. 2015 epic launcher log)
                         output.meta.buildVersion = groups.value;
                         break;
 
@@ -200,6 +201,7 @@ const analyzeLog = (file: string) => {
                         break;
 
                     case 'Net CL':
+                    case 'API Version': // very old alias for net cl (used on ex. 2015 epic launcher log)
                         output.meta.netCL = parseInt(groups.value);
                         break;
 
