@@ -34,7 +34,9 @@
 			return;
 		}
 
-		if (!file.name.endsWith('.log') && !file.name.endsWith('.txt')) {
+		const fileExtension = file.name.split('.').pop();
+
+		if (!fileExtension || (fileExtension !== 'log' && fileExtension !== 'txt')) {
 			errorMessage = `It appears that '${file.name}' is not a valid fortnite log file'`;
 
 			return;
@@ -63,7 +65,7 @@
 
 		const objectUrl = URL.createObjectURL(blob);
 
-		downloadFromUrl(objectUrl, file.name.replace('.log', '-output.json'));
+		downloadFromUrl(objectUrl, file.name.replace(`.${fileExtension}`, '-output.json'));
 
 		URL.revokeObjectURL(objectUrl);
 	};
