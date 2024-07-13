@@ -62,35 +62,37 @@ export const POST: RequestHandler = async ({ request }) => {
         const id = randomUUID();
 
         if (storageEnabled) {
+            const meta: Record<string, string> = {
+                'name': file.name,
+            };
+
+            if (output.meta.buildVersion) {
+                meta['build-version'] = output.meta.buildVersion;
+            }
+
+            if (output.meta.engineVersion) {
+                meta['engine-version'] = output.meta.engineVersion;
+            }
+
+            if (output.meta.platform) {
+                meta['platform'] = output.meta.platform;
+            }
+
+            if (output.meta.branch) {
+                meta['branch'] = output.meta.branch;
+            }
+
+            if (output.meta.executableName) {
+                meta['exectable-name'] = output.meta.executableName;
+            }
+
             const command = new PutObjectCommand({
                 Bucket: env.STORAGE_BUCKET,
                 Key: `${output.meta.buildVersion}/${output.meta.platform || 'UnknownPlatform'}/${id}.txt`,
                 Body: fileContent,
                 ContentType: textPlainContentType,
-                Metadata: {
-                    'name': file.name,
-                },
+                Metadata: meta,
             });
-
-            if (output.meta.buildVersion) {
-                command.input.Metadata!['build-version'] = output.meta.buildVersion;
-            }
-
-            if (output.meta.engineVersion) {
-                command.input.Metadata!['engine-version'] = output.meta.engineVersion;
-            }
-
-            if (output.meta.platform) {
-                command.input.Metadata!['platform'] = output.meta.platform;
-            }
-
-            if (output.meta.branch) {
-                command.input.Metadata!['branch'] = output.meta.branch;
-            }
-
-            if (output.meta.executableName) {
-                command.input.Metadata!['exectable-name'] = output.meta.executableName;
-            }
 
             const object = await storage.send(command, {
                 requestTimeout: 15 * 1000,

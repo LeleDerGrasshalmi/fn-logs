@@ -15,6 +15,8 @@ const errorStatusCodeRegex = /(code|Code|HttpResult|Status)(: |=)(?<statusCode>\
 const mmsMessage = "LogMatchmakingServiceClient: Verbose: HandleWebSocketMessage - Received message: ";
 const mmsMessageRegex = /Received message: "(?<message>.+)"/;
 
+const urlRegex = /(http(s)|ws(s))?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?!&//=]*)/gi;
+
 export interface ProfileUpdate {
     time: string;
     accountId: string;
@@ -39,9 +41,22 @@ export interface MMSError {
     };
 }
 
+export interface URLEvent {
+    time: string;
+    url: string;
+}
+
+export interface URLEventData {
+    events: URLEvent[];
+    uniqueUrls: string[];
+}
+
+
 export interface AnalyzedLogOutput {
     meta: {
+        baseDirectory: string | null;
         executableName: string | null;
+        commandLine: string | null;
         platform: string | null;
         branch: string | null;
         buildConfig: string | null;
@@ -57,6 +72,7 @@ export interface AnalyzedLogOutput {
         profileUpdates: ProfileUpdate[];
         errors: APIResponseError[];
         mmsErrors: MMSError[];
+        urls: URLEventData;
     };
 }
 
@@ -117,7 +133,9 @@ const analyzeLog = (file: string) => {
 
     const output: AnalyzedLogOutput = {
         meta: {
+            baseDirectory: null,
             executableName: null,
+            commandLine: null,
             platform: null,
             branch: null,
             buildConfig: null,
@@ -133,6 +151,10 @@ const analyzeLog = (file: string) => {
             profileUpdates: [],
             errors: [],
             mmsErrors: [],
+            urls: {
+                events: [],
+                uniqueUrls: [],
+            },
         },
     };
 
@@ -173,7 +195,7 @@ const analyzeLog = (file: string) => {
             const groups = content.match(initMetadataRegex)?.groups;
 
             // See https://github.com/EpicGames/UnrealEngine/blob/072300df18a94f18077ca20a14224b5d99fee872/Engine/Source/Runtime/Core/Private/Misc/App.cpp#L378
-            if (groups?.key && groups?.value) {
+            if (groups?.key && typeof groups?.value === 'string') {
                 switch (groups.key) {
                     case 'ExecutableName':
                         output.meta.executableName = groups.value;
@@ -207,7 +229,7 @@ const analyzeLog = (file: string) => {
 
                     case 'Compiled (64-bit)':
                     case 'Compiled (32-bit)':
-                        output.meta.compiledAt = new Date(groups.value).toISOString()
+                        output.meta.compiledAt = new Date(groups.value).toISOString();
                         break;
 
                     case 'Compiled with Clang':
@@ -223,6 +245,15 @@ const analyzeLog = (file: string) => {
                     case 'Compiled with Visual C++':
                         output.meta.compiledWith = 'Visual C++';
                         output.meta.compiledWithVersion = groups.value;
+                        break;
+
+                    case 'Command Line':
+                    case 'Filtered Command Line':
+                        output.meta.commandLine = groups.value.trim();
+                        break;
+
+                    case 'Base Directory':
+                        output.meta.baseDirectory = groups.value;
                         break;
 
                     default:
@@ -375,7 +406,29 @@ const analyzeLog = (file: string) => {
 
             continue;
         }
+
+        // URLs
+        if (line.includes('://')) {
+            const matches = line.match(urlRegex) || [];
+
+            matches.forEach((url) => {
+                const cleanedUrl = url.endsWith('.')
+                    ? url.substring(0, url.lastIndexOf('.'))
+                    : url;
+
+                output.events.urls.events.push({
+                    time: parseTime(line),
+                    url: cleanedUrl,
+                });
+
+                if (!output.events.urls.uniqueUrls.includes(cleanedUrl)) {
+                    output.events.urls.uniqueUrls.push(cleanedUrl);
+                }
+            });
+        }
     }
+
+    output.events.urls.uniqueUrls.sort();
 
     return output;
 };
